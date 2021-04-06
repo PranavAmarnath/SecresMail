@@ -8,13 +8,18 @@ import java.awt.event.HierarchyListener;
 import java.util.regex.Pattern;
 
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableModel;
+
+import org.jdesktop.swingx.JXStatusBar;
+import org.jdesktop.swingx.JXStatusBar.Constraint;
 
 import com.formdev.flatlaf.util.SystemInfo;
 
@@ -33,6 +38,7 @@ public class View {
 
 	private static JFrame frame;
 	private static JTable mailTable;
+	private JProgressBar readProgressBar;
 
 	public View() {
 		createAndShowGUI();
@@ -69,52 +75,55 @@ public class View {
 		JFXPanel contentPanel = new JFXPanel();
 
 		mailTable.getSelectionModel().addListSelectionListener(e -> {
-			Platform.runLater(new Runnable() {
-				@Override
-				public void run() {
-					try {
-						if(!Model.getFolder().isOpen()) {
-							Model.getFolder().open(Folder.READ_WRITE);
-						}
-						Message message = Model.getMessages()[(Model.getMessages().length - 1) - (int) mailTable.getSelectedRow()];
-						Object content = message.getContent();
-						BodyPart bp = null;
-						String email = "";
-						if(content instanceof Multipart) {
-							Multipart mp = (Multipart) content;
-							for(int i = 0; i < mp.getCount(); i++) {
-								bp = mp.getBodyPart(i);
-								if(Pattern
-										.compile(Pattern.quote("text/html"),
-												Pattern.CASE_INSENSITIVE)
-										.matcher(bp.getContentType()).find()) {
-									// found html part
-									//System.out.println((String) bp.getContent());
-									email = (String) bp.getContent();
-								}
+			new Thread(() -> {
+				Message message;
+				Object content;
+				BodyPart bp;
+				String email = null;
+				try {
+					if(!Model.getFolder().isOpen()) {
+						Model.getFolder().open(Folder.READ_WRITE);
+					}
+					message = Model.getMessages()[(Model.getMessages().length - 1) - (int) mailTable.getSelectedRow()];
+					content = message.getContent();
+					bp = null;
+					email = "";
+					if(content instanceof Multipart) {
+						Multipart mp = (Multipart) content;
+						for(int i = 0; i < mp.getCount(); i++) {
+							bp = mp.getBodyPart(i);
+							if(Pattern
+									.compile(Pattern.quote("text/html"),
+											Pattern.CASE_INSENSITIVE)
+									.matcher(bp.getContentType()).find()) {
+								// found html part
+								//System.out.println((String) bp.getContent());
+								email = (String) bp.getContent();
 							}
 						}
-						else {
-							email = message.getContent().toString();
-						}
-						final String finalEmail = email;
-
-						WebView view = new WebView();
-						WebEngine engine = view.getEngine();
-
-						StackPane root = new StackPane();
-						root.getChildren().add(view);
-						if(SystemInfo.isMacOS) root.getStylesheets().add("/style_mac.css");
-						else root.getStylesheets().add("/style_win.css");
-
-						engine.loadContent(finalEmail);
-
-						contentPanel.setScene(new Scene(root));
-					} catch (Exception e) {
-						e.printStackTrace();
 					}
+					else {
+						email = message.getContent().toString();
+					}
+				} catch (Exception e1) {
+					e1.printStackTrace();
 				}
-			});
+
+				final String finalEmail = email;
+				Platform.runLater(() -> {
+					WebView view = new WebView();
+					WebEngine engine = view.getEngine();
+
+					StackPane root = new StackPane();
+					root.getChildren().add(view);
+					if(SystemInfo.isMacOS) root.getStylesheets().add("/style_mac.css");
+					else root.getStylesheets().add("/style_win.css");
+
+					engine.loadContent(finalEmail);
+
+					contentPanel.setScene(new Scene(root));
+				});
+			}).start();
 		});
 
 		JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, tablePanel, contentPanel);
@@ -125,6 +134,18 @@ public class View {
 
 		frame.add(mainPanel);
 
+		JXStatusBar statusBar = new JXStatusBar();
+		JLabel statusLabel = new JLabel("Ready");
+		JXStatusBar.Constraint c1 = new Constraint();
+		c1.setFixedWidth(100);
+		statusBar.add(statusLabel, c1); // Fixed width of 100 with no inserts
+		JXStatusBar.Constraint c2 = new Constraint(JXStatusBar.Constraint.ResizeBehavior.FILL); // Fill with no inserts
+		readProgressBar = new JProgressBar();
+		//readProgressBar.setIndeterminate(true);
+		statusBar.add(readProgressBar, c2); // Fill with no insets - will use remaining space
+
+		frame.add(statusBar, BorderLayout.SOUTH);
+		
 		frame.pack();
 	}
 

@@ -55,6 +55,13 @@ public class Model {
 					@Override
 					public void setValueAt(Object value, int row, int col) {
 						super.setValueAt(value, row, col);
+						if(!emailFolder.isOpen()) {
+							try {
+								emailFolder.open(Folder.READ_WRITE);
+							} catch (MessagingException e) {
+								e.printStackTrace();
+							}
+						}
 						if(col == 1) {
 							if((Boolean) this.getValueAt(row, col) == true) {
 								try {
@@ -109,14 +116,16 @@ public class Model {
 
 			// retrieve the messages from the folder in an array and print it
 			messages = emailFolder.getMessages();
-			
+
 			Timer timer = new Timer();
 			timer.scheduleAtFixedRate(new TimerTask() {
 				@Override
 				public void run() {
 					try {
 						//System.out.println("TimerTask started");
-						if(!emailFolder.isOpen()) emailFolder.open(Folder.READ_WRITE);
+						if(!emailFolder.isOpen()) {
+							emailFolder.open(Folder.READ_WRITE);
+						}
 						// We do the first reading of emails
 						int start = 1;
 						int end = emailFolder.getMessageCount();
@@ -131,8 +140,11 @@ public class Model {
 							@Override
 							public void messagesAdded(MessageCountEvent ev) {
 								try {
-									//System.out.println("Message received");
-									Message[] msgs = emailFolder.search(new AndTerm(new FlagTerm(new Flags(Flags.Flag.SEEN), false), new FromStringTerm("@gmail.com")));
+									//System.out.println("Message added");
+									if(!Model.getFolder().isOpen()) {
+										Model.getFolder().open(Folder.READ_WRITE);
+									}
+									Message[] msgs = ev.getMessages();
 									for(Message message : msgs) {
 										model.insertRow(0, new Object[] {message.getSubject(), message.isSet(Flags.Flag.SEEN), message.getFrom()[0], new SimpleDateFormat().format(message.getSentDate())});
 										messages = emailFolder.getMessages(); // update messages array length
@@ -145,6 +157,9 @@ public class Model {
 
 						// Waiting for new messages
 						for(;;) {
+							if(!Model.getFolder().isOpen()) {
+								Model.getFolder().open(Folder.READ_WRITE);
+							}
 							((IMAPFolder) emailFolder).idle();
 						}
 					} catch (MessagingException ex) {

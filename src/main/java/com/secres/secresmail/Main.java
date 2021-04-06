@@ -19,7 +19,7 @@ import com.formdev.flatlaf.FlatLightLaf;
 import com.formdev.flatlaf.util.SystemInfo;
 
 public class Main {
-	
+
 	private static LoginListener loginListener;
 	private static JXLoginPane loginPane;
 
@@ -29,7 +29,7 @@ public class Main {
 		System.setProperty("apple.awt.application.appearance", "system");
 		System.setProperty("apple.awt.antialiasing", "true");
 		System.setProperty("apple.awt.textantialiasing", "true");
-		
+
 		if(SystemInfo.isMacOS) {
 			try {				
 				SwingUtilities.invokeLater(() -> {
@@ -47,12 +47,12 @@ public class Main {
 				});
 			} catch (Exception e) { e.printStackTrace(); }
 		}
-		
+
 		SwingUtilities.invokeLater(() -> {
 			FlatLightLaf.install();
-			
+
 			final String host = "imap.googlemail.com"; // change accordingly
-			
+
 			loginPane = new JXLoginPane();
 			createLoginDialog();
 
@@ -62,7 +62,7 @@ public class Main {
 					return true;
 				}
 			};
-			
+
 			loginListener = new LoginAdapter() {
 				@Override
 				public void loginFailed(LoginEvent source) {
@@ -76,7 +76,7 @@ public class Main {
 					};
 					loginService.addLoginListener(this);
 					loginPane.setLoginService(loginService);
-					
+
 					createLoginDialog();
 				}
 
@@ -91,13 +91,13 @@ public class Main {
 			loginPane.setLoginService(loginService);
 
 			// if loginPane was cancelled or closed then its status is CANCELLED
-	        // and still need to dispose main JFrame to exiting application
-	        if(loginPane.getStatus() == JXLoginPane.Status.CANCELLED) {
-	            View.getFrame().dispatchEvent(new WindowEvent(View.getFrame(), WindowEvent.WINDOW_CLOSING));
-	        }
+			// and still need to dispose main JFrame to exiting application
+			if(loginPane.getStatus() == JXLoginPane.Status.CANCELLED) {
+				View.getFrame().dispatchEvent(new WindowEvent(View.getFrame(), WindowEvent.WINDOW_CLOSING));
+			}
 		});
 	}
-	
+
 	private static void createLoginDialog() {
 		JXLoginPane.JXLoginFrame dialog = new JXLoginPane.JXLoginFrame(loginPane);
 		dialog.addWindowListener(new WindowAdapter() {
@@ -107,9 +107,9 @@ public class Main {
 			}
 		});
 		dialog.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        dialog.setVisible(true);
+		dialog.setVisible(true);
 	}
-	
+
 	public static LoginListener getLoginListener() {
 		return loginListener;
 	}
