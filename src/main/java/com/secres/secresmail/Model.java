@@ -21,6 +21,8 @@ import jakarta.mail.MessagingException;
 import jakarta.mail.NoSuchProviderException;
 import jakarta.mail.Session;
 import jakarta.mail.Store;
+import jakarta.mail.event.ConnectionAdapter;
+import jakarta.mail.event.ConnectionEvent;
 import jakarta.mail.event.MessageCountAdapter;
 import jakarta.mail.event.MessageCountEvent;
 import jakarta.mail.search.AndTerm;
@@ -33,6 +35,7 @@ public class Model {
 	private String[] header;
 	private static Message[] messages;
 	private static Folder emailFolder;
+	private int IMAPS_PORT = 993;
 
 	public Model(final String host, final String user, final String password) {
 		class Worker extends SwingWorker<Void, String> {
@@ -50,6 +53,16 @@ public class Model {
 							break;
 						}
 						return clazz;
+					}
+
+					@Override
+					public boolean isCellEditable(int row, int col) {
+						switch (col) {
+						case 1:
+							return true;
+						default:
+							return false;
+						}
 					}
 
 					@Override
@@ -83,6 +96,7 @@ public class Model {
 					}
 				};
 				View.getTable().setModel(model);
+				View.getTable().getColumnModel().getColumn(1).setMaxWidth(50);
 
 				readMail(host, user, password);
 				return null;
@@ -95,13 +109,16 @@ public class Model {
 		try {
 			//create properties field
 			Properties properties = new Properties();
+			properties.setProperty("mail.imaps.starttls.enable", "true");
+			properties.setProperty("mail.imap.ssl.enable", "true");
+			properties.setProperty("mail.smtp.ssl.enable", "true");
 
 			Session emailSession = Session.getDefaultInstance(properties);
 
 			Store store = emailSession.getStore("imaps");
 
 			try {
-				store.connect(host, 993, user, password);
+				store.connect(host, IMAPS_PORT, user, password);
 			} catch (Exception e) {
 				e.printStackTrace();
 				Main.getLoginListener().loginFailed(new LoginEvent(e));
@@ -116,6 +133,17 @@ public class Model {
 
 			// retrieve the messages from the folder in an array and print it
 			messages = emailFolder.getMessages();
+
+			emailFolder.addConnectionListener(new ConnectionAdapter() {
+				@Override
+				public void closed(ConnectionEvent e) {
+					try {
+						emailFolder.open(Folder.READ_WRITE);
+					} catch (MessagingException e1) {
+						e1.printStackTrace();
+					}
+				}
+			});
 
 			Timer timer = new Timer();
 			timer.scheduleAtFixedRate(new TimerTask() {
@@ -141,8 +169,8 @@ public class Model {
 							public void messagesAdded(MessageCountEvent ev) {
 								try {
 									//System.out.println("Message added");
-									if(!Model.getFolder().isOpen()) {
-										Model.getFolder().open(Folder.READ_WRITE);
+									if(!emailFolder.isOpen()) {
+										emailFolder.open(Folder.READ_WRITE);
 									}
 									Message[] msgs = ev.getMessages();
 									for(Message message : msgs) {
@@ -157,19 +185,25 @@ public class Model {
 
 						// Waiting for new messages
 						for(;;) {
-							if(!Model.getFolder().isOpen()) {
-								Model.getFolder().open(Folder.READ_WRITE);
+							try {
+								((IMAPFolder) emailFolder).idle();
+							} catch (FolderClosedException e) {
+								e.printStackTrace();
+								if(!emailFolder.isOpen()) {
+									emailFolder.open(Folder.READ_WRITE);
+								}
 							}
-							((IMAPFolder) emailFolder).idle();
 						}
 					} catch (MessagingException ex) {
 						ex.printStackTrace();
 					}
-
 				}
 			}, 0, 100000); // 0 milliseconds till start, 100 seconds delay between checks
 
 			for(int i = messages.length - 1; i >= 0; i--) {
+				if(!emailFolder.isOpen()) {
+					emailFolder.open(Folder.READ_WRITE);
+				}
 				Message message = messages[i];
 				model.addRow(new Object[] {message.getSubject(), message.isSet(Flags.Flag.SEEN), message.getFrom()[0], new SimpleDateFormat().format(message.getSentDate())});
 			}
