@@ -1,6 +1,7 @@
 com\secres\secresmail\Model$1.class
 com\secres\secresmail\View$4.class
 com\secres\secresmail\Main$2.class
+com\secres\secresmail\ListCellTitledBorder.class
 com\secres\secresmail\View.class
 com\secres\secresmail\Model$1Worker$1.class
 com\secres\secresmail\Main$3.class
@@ -9,7 +10,9 @@ com\secres\secresmail\Model.class
 com\secres\secresmail\View$5.class
 com\secres\secresmail\View$1ForcedListSelectionModel.class
 com\secres\secresmail\View$1.class
+com\secres\secresmail\View$FileListCellRenderer.class
 com\secres\secresmail\Main.class
+com\secres\secresmail\View$6.class
 com\secres\secresmail\Model$1Worker.class
 com\secres\secresmail\Main$1.class
 com\secres\secresmail\View$2.class

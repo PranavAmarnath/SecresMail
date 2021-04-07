@@ -1,32 +1,39 @@
 package com.secres.secresmail;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.HierarchyEvent;
 import java.awt.event.HierarchyListener;
+import java.io.File;
 import java.io.IOException;
 import java.util.regex.Pattern;
 
+import javax.swing.BorderFactory;
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.DefaultListModel;
 import javax.swing.DefaultListSelectionModel;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTable;
+import javax.swing.ListModel;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
-import javax.swing.event.TableModelEvent;
-import javax.swing.event.TableModelListener;
+import javax.swing.UIManager;
+import javax.swing.border.CompoundBorder;
+import javax.swing.filechooser.FileSystemView;
 import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.TableModel;
 
-import org.jdesktop.swingx.JXStatusBar;
-import org.jdesktop.swingx.JXStatusBar.Constraint;
+import org.apache.commons.lang3.StringUtils;
 import org.jdesktop.swingx.JXTable;
+import org.jdesktop.swingx.JXTitledPanel;
 
 import com.formdev.flatlaf.util.SystemInfo;
 
@@ -41,15 +48,16 @@ import javafx.application.Platform;
 import javafx.embed.swing.JFXPanel;
 import javafx.scene.Scene;
 import javafx.scene.layout.StackPane;
-import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
 
 public class View {
 
 	private static JFrame frame;
 	private static JXTable mailTable;
-	private JProgressBar readProgressBar;
 	private WebView view;
+	private JSplitPane splitPane;
+	private JFXPanel contentPanel;
+	private JList<Object> attachmentsList;
 
 	public View() {
 		createAndShowGUI();
@@ -82,19 +90,7 @@ public class View {
 		JPanel tablePanel = new JPanel(new BorderLayout());
 		tablePanel.add(tableScrollPane);
 
-		JFXPanel contentPanel = new JFXPanel();
-
-		Platform.runLater(() -> {
-			view = new WebView();
-			WebEngine engine = view.getEngine();
-
-			StackPane root = new StackPane();
-			root.getChildren().add(view);
-			if(SystemInfo.isMacOS) root.getStylesheets().add("/style_mac.css");
-			else root.getStylesheets().add("/style_win.css");
-
-			contentPanel.setScene(new Scene(root));
-		});
+		contentPanel = createJavaFXPanel();
 
 		mailTable.setDefaultRenderer(String.class, new DefaultTableCellRenderer() {
 			@Override
@@ -147,7 +143,11 @@ public class View {
 					}
 					message = Model.getMessages()[(Model.getMessages().length - 1) - mailTable.getSelectedRow()];
 					content = message.getContent();
-					SwingUtilities.invokeLater(() -> mailTable.getModel().setValueAt(true, mailTable.getSelectedRow(), 1));
+					SwingUtilities.invokeLater(() -> {
+						mailTable.getModel().setValueAt(true, mailTable.getSelectedRow(), 1);
+						ListModel<Object> model = (ListModel<Object>) attachmentsList.getModel();
+						((DefaultListModel<Object>) model).removeAllElements();
+					});
 					bp = null;
 					email = "";
 					if(content instanceof Multipart) {
@@ -173,35 +173,84 @@ public class View {
 				}
 
 				final String finalEmail = email;
+
 				Platform.runLater(() -> {
 					view.getEngine().loadContent(finalEmail);
 				});
+
+				int attachmentCount = getAttachmentCount(message);
+				if(attachmentCount > 0) {
+					try {
+						Multipart multipart = (Multipart) message.getContent();
+
+						for(int i = 0; i < multipart.getCount(); i++) {
+							//System.out.println("Entered " + i + " file.");
+
+							BodyPart bodyPart = multipart.getBodyPart(i);
+							if(!Part.ATTACHMENT.equalsIgnoreCase(bodyPart.getDisposition()) &&
+									StringUtils.isBlank(bodyPart.getFileName())) {
+								continue; // dealing with attachments only
+							} 
+							//InputStream is = bodyPart.getInputStream();
+							// do not do this in production code -- a malicious email can easily contain this filename: "../etc/passwd", or any other path: They can overwrite _ANY_ file on the system that this code has write access to!
+							File f = new File(bodyPart.getFileName());
+
+							SwingUtilities.invokeLater(() -> {
+								((DefaultListModel<Object>) attachmentsList.getModel()).addElement(f);
+							});
+
+							//FileUtils.copyInputStreamToFile(is, f); // copies java.io.InputStream into a java.io.File
+
+							//System.out.println("Finished " + i + " file.");
+						}
+					} catch (Exception e1) {
+						e1.printStackTrace();
+					}
+				}
 
 				//System.out.println(getAttachmentCount(message)); // prints number of attachments
 			}).start();
 		});
 
-		JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, tablePanel, contentPanel);
+		splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, tablePanel, contentPanel);
 		mainPanel.add(splitPane);
 
-		setDividerLocation(splitPane, 0.5);
-		splitPane.setResizeWeight(0.5);
+		attachmentsList = new JList<Object>();
+		attachmentsList.setModel(new DefaultListModel<Object>());
+		attachmentsList.setSelectionModel(new DefaultListSelectionModel() {
+			@Override
+			public void setAnchorSelectionIndex(final int anchorIndex) { }
+
+			@Override
+			public void setLeadAnchorNotificationEnabled(final boolean flag) { }
+
+			@Override
+			public void setLeadSelectionIndex(final int leadIndex) { }
+
+			@Override
+			public void setSelectionInterval(final int index0, final int index1) { }
+		});
+		attachmentsList.setCellRenderer(new FileListCellRenderer());
+
+		JScrollPane listScrollPane = new JScrollPane(attachmentsList);
+
+		JPanel attachmentsPanel = new JPanel(new BorderLayout());
+		attachmentsPanel.add(listScrollPane);
+		attachmentsList.setBorder(new CompoundBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5), new CompoundBorder(new ListCellTitledBorder(attachmentsList, "Attachments"), attachmentsList.getBorder())));
+
+		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, contentPanel, attachmentsPanel);
+
+		JPanel bottomPanel = new JPanel(new BorderLayout());
+		bottomPanel.add(splitPane);
+
+		this.splitPane.setBottomComponent(bottomPanel);
+		setDividerLocation(this.splitPane, 0.5);
+		this.splitPane.setResizeWeight(0.5);
+
+		setDividerLocation(splitPane, 0.75);
+		splitPane.setResizeWeight(0.75);
 
 		frame.add(mainPanel);
-
-		/*
-		JXStatusBar statusBar = new JXStatusBar();
-		JLabel statusLabel = new JLabel("Ready");
-		JXStatusBar.Constraint c1 = new Constraint();
-		c1.setFixedWidth(100);
-		statusBar.add(statusLabel, c1); // Fixed width of 100 with no inserts
-		JXStatusBar.Constraint c2 = new Constraint(JXStatusBar.Constraint.ResizeBehavior.FILL); // Fill with no inserts
-		readProgressBar = new JProgressBar();
-		//readProgressBar.setIndeterminate(true);
-		statusBar.add(readProgressBar, c2); // Fill with no insets - will use remaining space
-
-		frame.add(statusBar, BorderLayout.SOUTH);
-		*/
 
 		frame.pack();
 	}
@@ -232,6 +281,23 @@ public class View {
 		}
 	}
 
+	private JFXPanel createJavaFXPanel() {
+		JFXPanel contentPanel = new JFXPanel();
+
+		Platform.runLater(() -> {
+			view = new WebView();
+
+			StackPane root = new StackPane();
+			root.getChildren().add(view);
+			if(SystemInfo.isMacOS) root.getStylesheets().add("/style_mac.css");
+			else root.getStylesheets().add("/style_win.css");
+
+			contentPanel.setScene(new Scene(root));
+		});
+
+		return contentPanel;
+	}
+
 	private int getAttachmentCount(Message message) {
 		int count = 0;
 		try {
@@ -248,6 +314,54 @@ public class View {
 			e.printStackTrace();
 		}
 		return count;
+	}
+
+	/** A FileListCellRenderer for a File. */
+	class FileListCellRenderer extends DefaultListCellRenderer {
+
+		private static final long serialVersionUID = -7799441088157759804L;
+		private FileSystemView fileSystemView;
+		private JLabel label;
+		private Color textSelectionColor = Color.BLACK;
+		private Color backgroundSelectionColor = Color.CYAN;
+		private Color textNonSelectionColor = Color.BLACK;
+		private Color backgroundNonSelectionColor = Color.WHITE;
+
+		FileListCellRenderer() {
+			label = new JLabel();
+			label.setOpaque(true);
+			fileSystemView = FileSystemView.getFileSystemView();
+		}
+
+		@Override
+		public Component getListCellRendererComponent(
+				JList list,
+				Object value,
+				int index,
+				boolean selected,
+				boolean expanded) {
+
+			File file = (File) value;
+			if(fileSystemView.getSystemIcon(file) != null ) {
+				label.setIcon(fileSystemView.getSystemIcon(file));
+			}
+			else {
+				label.setIcon(UIManager.getIcon("Tree.leafIcon"));
+			}
+			label.setText(fileSystemView.getSystemDisplayName(file));
+			label.setToolTipText(file.getPath());
+
+			if (selected) {
+				label.setBackground(backgroundSelectionColor);
+				label.setForeground(textSelectionColor);
+			} else {
+				label.setBackground(backgroundNonSelectionColor);
+				label.setForeground(textNonSelectionColor);
+			}
+
+			return label;
+		}
+
 	}
 
 	public static JFrame getFrame() {
