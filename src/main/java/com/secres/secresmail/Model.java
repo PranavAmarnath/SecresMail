@@ -1,6 +1,5 @@
 package com.secres.secresmail;
 
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Properties;
 import java.util.Timer;
@@ -25,9 +24,6 @@ import jakarta.mail.event.ConnectionAdapter;
 import jakarta.mail.event.ConnectionEvent;
 import jakarta.mail.event.MessageCountAdapter;
 import jakarta.mail.event.MessageCountEvent;
-import jakarta.mail.search.AndTerm;
-import jakarta.mail.search.FlagTerm;
-import jakarta.mail.search.FromStringTerm;
 
 public class Model {
 
@@ -44,9 +40,11 @@ public class Model {
 				header = new String[]{"Subject", "Read", "Correspondents", "Date"};
 
 				model = new DefaultTableModel(header, 0) {
+					private static final long serialVersionUID = -2116346605141053545L;
+
 					@Override
 					public Class<?> getColumnClass(int columnIndex) {
-						Class clazz = String.class;
+						Class<?> clazz = String.class;
 						switch (columnIndex) {
 						case 1:
 							clazz = Boolean.class;

@@ -19,7 +19,6 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
-import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTable;
@@ -33,7 +32,6 @@ import javax.swing.table.DefaultTableCellRenderer;
 
 import org.apache.commons.lang3.StringUtils;
 import org.jdesktop.swingx.JXTable;
-import org.jdesktop.swingx.JXTitledPanel;
 
 import com.formdev.flatlaf.util.SystemInfo;
 
@@ -70,6 +68,8 @@ public class View {
 		JPanel mainPanel = new JPanel(new BorderLayout());
 
 		mailTable = new JXTable() {
+			private static final long serialVersionUID = 7038819780398948914L;
+
 			@Override
 			public void changeSelection(int rowIndex, int columnIndex, boolean toggle, boolean extend) {
 				if(convertColumnIndexToModel(columnIndex) == 1) {
@@ -93,6 +93,8 @@ public class View {
 		contentPanel = createJavaFXPanel();
 
 		mailTable.setDefaultRenderer(String.class, new DefaultTableCellRenderer() {
+			private static final long serialVersionUID = -2357302025054207092L;
+
 			@Override
 			public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
 				super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column); 
@@ -102,6 +104,8 @@ public class View {
 		});
 
 		class ForcedListSelectionModel extends DefaultListSelectionModel {
+
+			private static final long serialVersionUID = -8193032676014906509L;
 
 			public ForcedListSelectionModel () {
 				setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -120,6 +124,8 @@ public class View {
 		mailTable.setSelectionModel(new ForcedListSelectionModel()); // prevent multiple row selection
 
 		mailTable.getColumnModel().setSelectionModel(new DefaultListSelectionModel() {
+			private static final long serialVersionUID = 5039886252977060577L;
+
 			@Override
 			public boolean isSelectedIndex(int index) {
 				return mailTable.convertColumnIndexToModel(index) != 1;
@@ -191,17 +197,12 @@ public class View {
 									StringUtils.isBlank(bodyPart.getFileName())) {
 								continue; // dealing with attachments only
 							} 
-							//InputStream is = bodyPart.getInputStream();
 							// do not do this in production code -- a malicious email can easily contain this filename: "../etc/passwd", or any other path: They can overwrite _ANY_ file on the system that this code has write access to!
 							File f = new File(bodyPart.getFileName());
 
 							SwingUtilities.invokeLater(() -> {
 								((DefaultListModel<Object>) attachmentsList.getModel()).addElement(f);
 							});
-
-							//FileUtils.copyInputStreamToFile(is, f); // copies java.io.InputStream into a java.io.File
-
-							//System.out.println("Finished " + i + " file.");
 						}
 					} catch (Exception e1) {
 						e1.printStackTrace();
@@ -218,6 +219,8 @@ public class View {
 		attachmentsList = new JList<Object>();
 		attachmentsList.setModel(new DefaultListModel<Object>());
 		attachmentsList.setSelectionModel(new DefaultListSelectionModel() {
+			private static final long serialVersionUID = -1175323994925570200L;
+
 			@Override
 			public void setAnchorSelectionIndex(final int anchorIndex) { }
 
@@ -255,7 +258,7 @@ public class View {
 		frame.pack();
 	}
 
-	public static void setDividerLocation(final JSplitPane splitter, final double proportion) {
+	private void setDividerLocation(final JSplitPane splitter, final double proportion) {
 		if (splitter.isShowing()) {
 			if ((splitter.getWidth() > 0) && (splitter.getHeight() > 0)) {
 				splitter.setDividerLocation(proportion);
@@ -317,7 +320,7 @@ public class View {
 	}
 
 	/** A FileListCellRenderer for a File. */
-	class FileListCellRenderer extends DefaultListCellRenderer {
+	private class FileListCellRenderer extends DefaultListCellRenderer {
 
 		private static final long serialVersionUID = -7799441088157759804L;
 		private FileSystemView fileSystemView;
@@ -327,20 +330,14 @@ public class View {
 		private Color textNonSelectionColor = Color.BLACK;
 		private Color backgroundNonSelectionColor = Color.WHITE;
 
-		FileListCellRenderer() {
+		public FileListCellRenderer() {
 			label = new JLabel();
 			label.setOpaque(true);
 			fileSystemView = FileSystemView.getFileSystemView();
 		}
 
 		@Override
-		public Component getListCellRendererComponent(
-				JList list,
-				Object value,
-				int index,
-				boolean selected,
-				boolean expanded) {
-
+		public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean selected,	boolean expanded) {
 			File file = (File) value;
 			if(fileSystemView.getSystemIcon(file) != null ) {
 				label.setIcon(fileSystemView.getSystemIcon(file));

@@ -4,7 +4,6 @@ import java.awt.Desktop;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
-import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
@@ -25,7 +24,7 @@ public class Main {
 
 	public static void main(String[] args) {
 		System.setProperty("apple.laf.useScreenMenuBar", "true");
-		System.setProperty("apple.awt.application.name", "SecresCSV");
+		System.setProperty("apple.awt.application.name", "SecresMail");
 		System.setProperty("apple.awt.application.appearance", "system");
 		System.setProperty("apple.awt.antialiasing", "true");
 		System.setProperty("apple.awt.textantialiasing", "true");
