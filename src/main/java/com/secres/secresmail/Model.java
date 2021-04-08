@@ -1,6 +1,7 @@
 package com.secres.secresmail;
 
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -107,8 +108,8 @@ public class Model {
 		try {
 			//create properties field
 			Properties properties = new Properties();
-			properties.setProperty("mail.imaps.starttls.enable", "true");
-			properties.setProperty("mail.imap.ssl.enable", "true");
+			properties.setProperty("mail.imaps.partialfetch", "false");
+			properties.setProperty("mail.smtp.starttls.enable", "true");
 			properties.setProperty("mail.smtp.ssl.enable", "true");
 
 			Session emailSession = Session.getDefaultInstance(properties);
@@ -173,6 +174,25 @@ public class Model {
 									Message[] msgs = ev.getMessages();
 									for(Message message : msgs) {
 										model.insertRow(0, new Object[] {message.getSubject(), message.isSet(Flags.Flag.SEEN), message.getFrom()[0], new SimpleDateFormat().format(message.getSentDate())});
+										messages = emailFolder.getMessages(); // update messages array length
+									}
+								} catch (MessagingException ex) {
+									ex.printStackTrace();
+								}
+							}
+							
+							@Override
+							public void messagesRemoved(MessageCountEvent ev) {
+								try {
+									//System.out.println("Message removed");
+									if(!emailFolder.isOpen()) {
+										emailFolder.open(Folder.READ_WRITE);
+									}
+									Message[] msgs = ev.getMessages();
+									for(Message message : msgs) {
+										//System.out.println((messages.length - 1) - Arrays.asList(messages).indexOf(message));
+										model.removeRow((messages.length - 1) - Arrays.asList(messages).indexOf(message));
+										emailFolder.expunge();
 										messages = emailFolder.getMessages(); // update messages array length
 									}
 								} catch (MessagingException ex) {

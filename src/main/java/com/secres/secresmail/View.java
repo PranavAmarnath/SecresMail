@@ -30,7 +30,6 @@ import javax.swing.border.CompoundBorder;
 import javax.swing.filechooser.FileSystemView;
 import javax.swing.table.DefaultTableCellRenderer;
 
-import org.apache.commons.lang3.StringUtils;
 import org.jdesktop.swingx.JXTable;
 
 import com.formdev.flatlaf.util.SystemInfo;
@@ -193,8 +192,7 @@ public class View {
 							//System.out.println("Entered " + i + " file.");
 
 							BodyPart bodyPart = multipart.getBodyPart(i);
-							if(!Part.ATTACHMENT.equalsIgnoreCase(bodyPart.getDisposition()) &&
-									StringUtils.isBlank(bodyPart.getFileName())) {
+							if(!Part.ATTACHMENT.equalsIgnoreCase(bodyPart.getDisposition())) {
 								continue; // dealing with attachments only
 							} 
 							// do not do this in production code -- a malicious email can easily contain this filename: "../etc/passwd", or any other path: They can overwrite _ANY_ file on the system that this code has write access to!
