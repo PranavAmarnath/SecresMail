@@ -14,6 +14,9 @@ import javax.swing.DefaultListModel;
 import javax.swing.DefaultListSelectionModel;
 import javax.swing.JFrame;
 import javax.swing.JList;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
@@ -72,10 +75,11 @@ public class View {
 			}
 		};
 
-		//mailTable.setShowGrid(true);
+		// mailTable.setShowGrid(true);
 		try {
 			mailTable.setAutoCreateRowSorter(true);
-		} catch (Exception e) { /* Move on (i.e. ignore sorting if exception occurs) */ }
+		} catch (Exception e) {
+			/* Move on (i.e. ignore sorting if exception occurs) */ }
 		mailTable.setCellSelectionEnabled(true);
 
 		JScrollPane tableScrollPane = new JScrollPane(mailTable);
@@ -89,8 +93,9 @@ public class View {
 			private static final long serialVersionUID = -2357302025054207092L;
 
 			@Override
-			public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-				super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column); 
+			public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+					boolean hasFocus, int row, int column) {
+				super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 				setBorder(noFocusBorder);
 				return this;
 			}
@@ -100,7 +105,7 @@ public class View {
 
 			private static final long serialVersionUID = -8193032676014906509L;
 
-			public ForcedListSelectionModel () {
+			public ForcedListSelectionModel() {
 				setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 			}
 
@@ -139,10 +144,12 @@ public class View {
 					if(!Model.getFolder().isOpen()) {
 						Model.getFolder().open(Folder.READ_WRITE);
 					}
-					message = Model.getMessages()[(Model.getMessages().length - 1) - mailTable.convertRowIndexToModel(mailTable.getSelectedRow())];
+					message = Model.getMessages()[(Model.getMessages().length - 1)
+							- mailTable.convertRowIndexToModel(mailTable.getSelectedRow())];
 					content = message.getContent();
 					SwingUtilities.invokeLater(() -> {
-						mailTable.getModel().setValueAt(true, mailTable.convertRowIndexToModel(mailTable.getSelectedRow()), 1);
+						mailTable.getModel().setValueAt(true,
+								mailTable.convertRowIndexToModel(mailTable.getSelectedRow()), 1);
 						ListModel<Object> model = (ListModel<Object>) attachmentsList.getModel();
 						((DefaultListModel<Object>) model).removeAllElements();
 					});
@@ -170,13 +177,15 @@ public class View {
 						Multipart multipart = (Multipart) message.getContent();
 
 						for(int i = 0; i < multipart.getCount(); i++) {
-							//System.out.println("Entered " + i + " file.");
+							// System.out.println("Entered " + i + " file.");
 
 							BodyPart bodyPart = multipart.getBodyPart(i);
 							if(!Part.ATTACHMENT.equalsIgnoreCase(bodyPart.getDisposition())) {
 								continue; // dealing with attachments only
-							} 
-							// do not do this in production code -- a malicious email can easily contain this filename: "../etc/passwd", or any other path: They can overwrite _ANY_ file on the system that this code has write access to!
+							}
+							// do not do this in production code -- a malicious email can easily contain
+							// this filename: "../etc/passwd", or any other path: They can overwrite _ANY_
+							// file on the system that this code has write access to!
 							File f = new File(bodyPart.getFileName());
 
 							SwingUtilities.invokeLater(() -> {
@@ -188,7 +197,8 @@ public class View {
 					}
 				}
 
-				//System.out.println(getAttachmentCount(message)); // prints number of attachments
+				// System.out.println(getAttachmentCount(message)); // prints number of
+				// attachments
 			}).start();
 		});
 
@@ -201,16 +211,20 @@ public class View {
 			private static final long serialVersionUID = -1175323994925570200L;
 
 			@Override
-			public void setAnchorSelectionIndex(final int anchorIndex) { }
+			public void setAnchorSelectionIndex(final int anchorIndex) {
+			}
 
 			@Override
-			public void setLeadAnchorNotificationEnabled(final boolean flag) { }
+			public void setLeadAnchorNotificationEnabled(final boolean flag) {
+			}
 
 			@Override
-			public void setLeadSelectionIndex(final int leadIndex) { }
+			public void setLeadSelectionIndex(final int leadIndex) {
+			}
 
 			@Override
-			public void setSelectionInterval(final int index0, final int index1) { }
+			public void setSelectionInterval(final int index0, final int index1) {
+			}
 		});
 		attachmentsList.setCellRenderer(new FileListCellRenderer());
 
@@ -218,7 +232,8 @@ public class View {
 
 		JPanel attachmentsPanel = new JPanel(new BorderLayout());
 		attachmentsPanel.add(listScrollPane);
-		attachmentsList.setBorder(new CompoundBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5), new CompoundBorder(new ListCellTitledBorder(attachmentsList, "Attachments"), attachmentsList.getBorder())));
+		attachmentsList.setBorder(new CompoundBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5), new CompoundBorder(
+				new ListCellTitledBorder(attachmentsList, "Attachments"), attachmentsList.getBorder())));
 
 		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, contentPanel, attachmentsPanel);
 
@@ -232,16 +247,27 @@ public class View {
 		setDividerLocation(splitPane, 0.75);
 		splitPane.setResizeWeight(0.75);
 
+		JMenuBar menuBar = new JMenuBar();
+		JMenu fileMenu = new JMenu("File");
+		JMenuItem sendMenuItem = new JMenuItem("Send...");
+		sendMenuItem.addActionListener(e -> {
+			new HTMLDocumentEditor();
+		});
+		fileMenu.add(sendMenuItem);
+		menuBar.add(fileMenu);
+
+		frame.setJMenuBar(menuBar);
 		frame.add(mainPanel);
 
 		frame.pack();
 	}
 
 	private void setDividerLocation(final JSplitPane splitter, final double proportion) {
-		if (splitter.isShowing()) {
-			if ((splitter.getWidth() > 0) && (splitter.getHeight() > 0)) {
+		if(splitter.isShowing()) {
+			if((splitter.getWidth() > 0) && (splitter.getHeight() > 0)) {
 				splitter.setDividerLocation(proportion);
-			} else {
+			}
+			else {
 				splitter.addComponentListener(new ComponentAdapter() {
 					@Override
 					public void componentResized(ComponentEvent ce) {
@@ -250,11 +276,12 @@ public class View {
 					}
 				});
 			}
-		} else {
+		}
+		else {
 			splitter.addHierarchyListener(new HierarchyListener() {
 				@Override
 				public void hierarchyChanged(HierarchyEvent e) {
-					if (((e.getChangeFlags() & HierarchyEvent.SHOWING_CHANGED) != 0) && splitter.isShowing()) {
+					if(((e.getChangeFlags() & HierarchyEvent.SHOWING_CHANGED) != 0) && splitter.isShowing()) {
 						splitter.removeHierarchyListener(this);
 						setDividerLocation(splitter, proportion);
 					}
@@ -288,8 +315,7 @@ public class View {
 				Multipart parts = (Multipart) object;
 				for(int i = 0; i < parts.getCount(); ++i) {
 					MimeBodyPart part = (MimeBodyPart) parts.getBodyPart(i);
-					if(Part.ATTACHMENT.equalsIgnoreCase(part.getDisposition()))
-						++count;
+					if(Part.ATTACHMENT.equalsIgnoreCase(part.getDisposition())) ++count;
 				}
 			}
 		} catch (IOException | MessagingException e) {
@@ -301,8 +327,8 @@ public class View {
 	/**
 	 * Return the primary text content of the message.
 	 * 
-	 * @param p  the <code>Part</code>
-	 * @return String  the primary text content
+	 * @param p the <code>Part</code>
+	 * @return String the primary text content
 	 */
 	private String getText(Part p) throws MessagingException, IOException {
 		if(p.isMimeType("text/*")) {
@@ -317,14 +343,12 @@ public class View {
 			for(int i = 0; i < mp.getCount(); i++) {
 				Part bp = mp.getBodyPart(i);
 				if(bp.isMimeType("text/plain")) {
-					if(text == null)
-						text = getText(bp);
+					if(text == null) text = getText(bp);
 					continue;
 				}
 				else if(bp.isMimeType("text/html")) {
 					String s = getText(bp);
-					if(s != null)
-						return s;
+					if(s != null) return s;
 				}
 				else {
 					return getText(bp);
@@ -333,11 +357,10 @@ public class View {
 			return text;
 		}
 		else if(p.isMimeType("multipart/*")) {
-			Multipart mp = (Multipart)p.getContent();
+			Multipart mp = (Multipart) p.getContent();
 			for(int i = 0; i < mp.getCount(); i++) {
 				String s = getText(mp.getBodyPart(i));
-				if(s != null)
-					return s;
+				if(s != null) return s;
 			}
 		}
 

@@ -32,9 +32,10 @@ public class FileListCellRenderer extends DefaultListCellRenderer {
 	}
 
 	@Override
-	public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean selected,	boolean expanded) {
+	public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean selected,
+			boolean expanded) {
 		File file = (File) value;
-		if(fileSystemView.getSystemIcon(file) != null ) {
+		if(fileSystemView.getSystemIcon(file) != null) {
 			label.setIcon(fileSystemView.getSystemIcon(file));
 		}
 		else {
@@ -43,10 +44,11 @@ public class FileListCellRenderer extends DefaultListCellRenderer {
 		label.setText(fileSystemView.getSystemDisplayName(file));
 		label.setToolTipText(file.getPath());
 
-		if (selected) {
+		if(selected) {
 			label.setBackground(backgroundSelectionColor);
 			label.setForeground(textSelectionColor);
-		} else {
+		}
+		else {
 			label.setBackground(backgroundNonSelectionColor);
 			label.setForeground(textNonSelectionColor);
 		}
