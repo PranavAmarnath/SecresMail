@@ -4,6 +4,7 @@ A mail client made in Java.
 How the application looks (Blurred for confidentiality):
 <p align="left">
     <img src="https://user-images.githubusercontent.com/64337291/114111087-ef727b00-988d-11eb-8376-7d9b1706a6c3.png" width=700 />
+    <img src="https://user-images.githubusercontent.com/64337291/114112975-6f9adf80-9892-11eb-81a5-ae32ccf9e1e9.png" width=700 />
 </p>
 
 Features:
