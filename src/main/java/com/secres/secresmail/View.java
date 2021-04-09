@@ -1,7 +1,6 @@
 package com.secres.secresmail;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
@@ -9,14 +8,11 @@ import java.awt.event.HierarchyEvent;
 import java.awt.event.HierarchyListener;
 import java.io.File;
 import java.io.IOException;
-import java.util.regex.Pattern;
 
 import javax.swing.BorderFactory;
-import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
 import javax.swing.DefaultListSelectionModel;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -25,9 +21,7 @@ import javax.swing.JTable;
 import javax.swing.ListModel;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
 import javax.swing.border.CompoundBorder;
-import javax.swing.filechooser.FileSystemView;
 import javax.swing.table.DefaultTableCellRenderer;
 
 import org.jdesktop.swingx.JXTable;
@@ -140,35 +134,22 @@ public class View {
 			new Thread(() -> {
 				Message message = null;
 				Object content = null;
-				BodyPart bp;
 				String email = null;
 				try {
 					if(!Model.getFolder().isOpen()) {
 						Model.getFolder().open(Folder.READ_WRITE);
 					}
-					message = Model.getMessages()[(Model.getMessages().length - 1) - mailTable.getSelectedRow()];
+					message = Model.getMessages()[(Model.getMessages().length - 1) - mailTable.convertRowIndexToModel(mailTable.getSelectedRow())];
 					content = message.getContent();
 					SwingUtilities.invokeLater(() -> {
-						mailTable.getModel().setValueAt(true, mailTable.getSelectedRow(), 1);
+						mailTable.getModel().setValueAt(true, mailTable.convertRowIndexToModel(mailTable.getSelectedRow()), 1);
 						ListModel<Object> model = (ListModel<Object>) attachmentsList.getModel();
 						((DefaultListModel<Object>) model).removeAllElements();
 					});
-					bp = null;
 					email = "";
 					if(content instanceof Multipart) {
 						Multipart mp = (Multipart) content;
-						for(int i = 0; i < mp.getCount(); i++) {
-							bp = mp.getBodyPart(i);
-							if(Pattern
-									.compile(Pattern.quote("text/html"),
-											Pattern.CASE_INSENSITIVE)
-									.matcher(bp.getContentType()).find()) {
-								// found html part
-								//System.out.println((String) bp.getContent());
-								email = (String) bp.getContent();
-								break;
-							}
-						}
+						email = getText(mp.getParent());
 					}
 					else {
 						email = message.getContent().toString();
@@ -303,11 +284,11 @@ public class View {
 		int count = 0;
 		try {
 			Object object = message.getContent();
-			if (object instanceof Multipart) {
+			if(object instanceof Multipart) {
 				Multipart parts = (Multipart) object;
-				for (int i = 0; i < parts.getCount(); ++i) {
+				for(int i = 0; i < parts.getCount(); ++i) {
 					MimeBodyPart part = (MimeBodyPart) parts.getBodyPart(i);
-					if (Part.ATTACHMENT.equalsIgnoreCase(part.getDisposition()))
+					if(Part.ATTACHMENT.equalsIgnoreCase(part.getDisposition()))
 						++count;
 				}
 			}
@@ -317,46 +298,50 @@ public class View {
 		return count;
 	}
 
-	/** A FileListCellRenderer for a File. */
-	private class FileListCellRenderer extends DefaultListCellRenderer {
-
-		private static final long serialVersionUID = -7799441088157759804L;
-		private FileSystemView fileSystemView;
-		private JLabel label;
-		private Color textSelectionColor = Color.BLACK;
-		private Color backgroundSelectionColor = Color.CYAN;
-		private Color textNonSelectionColor = Color.BLACK;
-		private Color backgroundNonSelectionColor = Color.WHITE;
-
-		public FileListCellRenderer() {
-			label = new JLabel();
-			label.setOpaque(true);
-			fileSystemView = FileSystemView.getFileSystemView();
+	/**
+	 * Return the primary text content of the message.
+	 * 
+	 * @param p  the <code>Part</code>
+	 * @return String  the primary text content
+	 */
+	private String getText(Part p) throws MessagingException, IOException {
+		if(p.isMimeType("text/*")) {
+			String s = (String) p.getContent();
+			return s;
 		}
 
-		@Override
-		public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean selected,	boolean expanded) {
-			File file = (File) value;
-			if(fileSystemView.getSystemIcon(file) != null ) {
-				label.setIcon(fileSystemView.getSystemIcon(file));
+		if(p.isMimeType("multipart/alternative")) {
+			// prefer html text over plain text
+			Multipart mp = (Multipart) p.getContent();
+			String text = null;
+			for(int i = 0; i < mp.getCount(); i++) {
+				Part bp = mp.getBodyPart(i);
+				if(bp.isMimeType("text/plain")) {
+					if(text == null)
+						text = getText(bp);
+					continue;
+				}
+				else if(bp.isMimeType("text/html")) {
+					String s = getText(bp);
+					if(s != null)
+						return s;
+				}
+				else {
+					return getText(bp);
+				}
 			}
-			else {
-				label.setIcon(UIManager.getIcon("Tree.leafIcon"));
+			return text;
+		}
+		else if(p.isMimeType("multipart/*")) {
+			Multipart mp = (Multipart)p.getContent();
+			for(int i = 0; i < mp.getCount(); i++) {
+				String s = getText(mp.getBodyPart(i));
+				if(s != null)
+					return s;
 			}
-			label.setText(fileSystemView.getSystemDisplayName(file));
-			label.setToolTipText(file.getPath());
-
-			if (selected) {
-				label.setBackground(backgroundSelectionColor);
-				label.setForeground(textSelectionColor);
-			} else {
-				label.setBackground(backgroundNonSelectionColor);
-				label.setForeground(textNonSelectionColor);
-			}
-
-			return label;
 		}
 
+		return null;
 	}
 
 	public static JFrame getFrame() {
