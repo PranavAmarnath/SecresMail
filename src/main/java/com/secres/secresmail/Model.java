@@ -28,6 +28,8 @@ import jakarta.mail.Session;
 import jakarta.mail.Store;
 import jakarta.mail.event.ConnectionAdapter;
 import jakarta.mail.event.ConnectionEvent;
+import jakarta.mail.event.MessageChangedEvent;
+import jakarta.mail.event.MessageChangedListener;
 import jakarta.mail.event.MessageCountAdapter;
 import jakarta.mail.event.MessageCountEvent;
 
@@ -37,9 +39,14 @@ public class Model {
 	private String[] header;
 	private static Message[] messages;
 	private static Folder emailFolder;
-	private int IMAPS_PORT = 993;
 	private static Session emailSession;
 	private static Properties properties;
+	private Timer timer;
+	private NewMessageTimer task;
+	
+	private final int DELAY = 0;
+	private final int PERIOD = 10000;
+	private final int IMAPS_PORT = 993;
 
 	public Model(final String host, final String user, final String password) {
 		class Worker extends SwingWorker<Void, String> {
@@ -86,20 +93,14 @@ public class Model {
 						if(col == 1) {
 							if((Boolean) this.getValueAt(row, col) == true) {
 								try {
-									emailFolder.setFlags(new Message[] { messages[(messages.length - 1) - row] },
-											new Flags(Flags.Flag.SEEN), true);
-									// System.out.println(getMessages()[(getMessages().length - 1) -
-									// row].isSet(Flags.Flag.SEEN));
+									emailFolder.setFlags(new Message[] { messages[(messages.length - 1) - row] }, new Flags(Flags.Flag.SEEN), true);
 								} catch (MessagingException e) {
 									e.printStackTrace();
 								}
 							}
 							else if((Boolean) this.getValueAt(row, col) == false) {
 								try {
-									emailFolder.setFlags(new Message[] { messages[(messages.length - 1) - row] },
-											new Flags(Flags.Flag.SEEN), false);
-									// System.out.println(getMessages()[(getMessages().length - 1) -
-									// row].isSet(Flags.Flag.SEEN));
+									emailFolder.setFlags(new Message[] { messages[(messages.length - 1) - row] }, new Flags(Flags.Flag.SEEN), false);
 								} catch (MessagingException e) {
 									e.printStackTrace();
 								}
@@ -113,8 +114,7 @@ public class Model {
 				TableCellRenderer tableCellRenderer = new DefaultTableCellRenderer() {
 					private static final long serialVersionUID = -7189272880275372668L;
 
-					public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
-							boolean hasFocus, int row, int column) {
+					public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
 						if(value instanceof Date) {
 							value = new SimpleDateFormat().format(value);
 						}
@@ -176,93 +176,71 @@ public class Model {
 					}
 				}
 			});
-
-			Timer timer = new Timer();
-			timer.scheduleAtFixedRate(new TimerTask() {
+			
+			// Adding a MessageCountListener to "listen" to new messages
+			emailFolder.addMessageCountListener(new MessageCountAdapter() {
 				@Override
-				public void run() {
+				public void messagesAdded(MessageCountEvent ev) {
 					try {
-						// System.out.println("TimerTask started");
 						if(!emailFolder.isOpen()) {
 							emailFolder.open(Folder.READ_WRITE);
 						}
-						// We do the first reading of emails
-						int start = 1;
-						int end = emailFolder.getMessageCount();
-						while(start <= end) {
-							// new messages that have arrived
-							start = end + 1;
-							end = emailFolder.getMessageCount();
-						}
-
-						// Adding a MessageCountListener to "listen" to new messages
-						emailFolder.addMessageCountListener(new MessageCountAdapter() {
-							@Override
-							public void messagesAdded(MessageCountEvent ev) {
-								try {
-									// System.out.println("Message added");
-									if(!emailFolder.isOpen()) {
-										emailFolder.open(Folder.READ_WRITE);
-									}
-									Message[] msgs = ev.getMessages();
-									for(Message message : msgs) {
-										model.insertRow(0,
-												new Object[] { message.getSubject(), message.isSet(Flags.Flag.SEEN),
-														message.getFrom()[0],
-														new SimpleDateFormat().format(message.getSentDate()) });
-										messages = emailFolder.getMessages(); // update messages array length
-									}
-								} catch (MessagingException ex) {
-									ex.printStackTrace();
-								}
-							}
-
-							@Override
-							public void messagesRemoved(MessageCountEvent ev) {
-								try {
-									// System.out.println("Message removed");
-									if(!emailFolder.isOpen()) {
-										emailFolder.open(Folder.READ_WRITE);
-									}
-									Message[] msgs = ev.getMessages();
-									for(Message message : msgs) {
-										// System.out.println((messages.length - 1) -
-										// Arrays.asList(messages).indexOf(message));
-										model.removeRow(
-												(messages.length - 1) - Arrays.asList(messages).indexOf(message));
-										emailFolder.expunge();
-										messages = emailFolder.getMessages(); // update messages array length
-									}
-								} catch (MessagingException ex) {
-									ex.printStackTrace();
-								}
-							}
-						});
-
-						// Waiting for new messages
-						for(;;) {
-							try {
-								((IMAPFolder) emailFolder).idle();
-							} catch (FolderClosedException e) {
-								e.printStackTrace();
-								if(!emailFolder.isOpen()) {
-									emailFolder.open(Folder.READ_WRITE);
-								}
-							}
+						Message[] msgs = ev.getMessages();
+						for(Message message : msgs) {
+							model.insertRow(0, new Object[] { message.getSubject(), message.isSet(Flags.Flag.SEEN), message.getFrom()[0], new SimpleDateFormat().format(message.getSentDate()) });
+							messages = emailFolder.getMessages(); // update messages array length
 						}
 					} catch (MessagingException ex) {
 						ex.printStackTrace();
 					}
 				}
-			}, 0, 100000); // 0 milliseconds till start, 100 seconds delay between checks
+
+				@Override
+				public void messagesRemoved(MessageCountEvent ev) {
+					try {
+						if(!emailFolder.isOpen()) {
+							emailFolder.open(Folder.READ_WRITE);
+						}
+						Message[] msgs = ev.getMessages();
+						for(Message message : msgs) {
+							model.removeRow((messages.length - 1) - Arrays.asList(messages).indexOf(message));
+							emailFolder.expunge();
+							messages = emailFolder.getMessages(); // update messages array length
+						}
+					} catch (MessagingException ex) {
+						ex.printStackTrace();
+					}
+				}
+			});
+			
+			emailFolder.addMessageChangedListener(new MessageChangedListener() {
+				@Override
+	            public void messageChanged(MessageChangedEvent e) {
+	                if(e.getMessageChangeType() == MessageChangedEvent.FLAGS_CHANGED) {
+	                	try {
+							if((Boolean) View.getTable().getModel().getValueAt((messages.length - 1) - Arrays.asList(messages).indexOf(e.getMessage()), 1) == e.getMessage().isSet(Flags.Flag.SEEN)) {
+								// If this flag (SEEN) is not the one that has changed i.e. the read values on client and server are same, return
+								return;
+							}
+							else {
+								// Set message read value to server's value
+								View.getTable().getModel().setValueAt(e.getMessage().isSet(Flags.Flag.SEEN), (messages.length - 1) - Arrays.asList(messages).indexOf(e.getMessage()), 1);
+							}
+						} catch (Exception e1) {
+							e1.printStackTrace();
+						}
+	                }
+	            }
+	        });
+
+			startTimer(); // start timer for incoming messages
 
 			for(int i = messages.length - 1; i >= 0; i--) {
 				if(!emailFolder.isOpen()) {
 					emailFolder.open(Folder.READ_WRITE);
 				}
 				Message message = messages[i];
-				model.addRow(new Object[] { message.getSubject(), message.isSet(Flags.Flag.SEEN), message.getFrom()[0],
-						message.getSentDate() });
+				model.addRow(new Object[] { message.getSubject(), message.isSet(Flags.Flag.SEEN), message.getFrom()[0], message.getSentDate() });
 			}
 
 			// close the store and folder objects
@@ -274,7 +252,46 @@ public class Model {
 			e.printStackTrace();
 		}
 	}
+	
+	class NewMessageTimer extends TimerTask {
+		@Override
+		public void run() {
+			try {
+				if(!emailFolder.isOpen()) {
+					emailFolder.open(Folder.READ_WRITE);
+				}
+				// We do the first reading of emails
+				int start = 1;
+				int end = emailFolder.getMessageCount();
+				while(start <= end) {
+					// new messages that have arrived
+					start = end + 1;
+					end = emailFolder.getMessageCount();
+				}
 
+				// Waiting for new messages
+				for(;;) {
+					try {
+						((IMAPFolder) emailFolder).idle();
+					} catch (FolderClosedException e) {
+						e.printStackTrace();
+						if(!emailFolder.isOpen()) {
+							emailFolder.open(Folder.READ_WRITE);
+						}
+					}
+				}
+			} catch (MessagingException ex) {
+				ex.printStackTrace();
+			}
+		}
+	}
+
+	private void startTimer() {
+	    timer = new Timer();
+	    task = new NewMessageTimer();
+	    timer.schedule(task, DELAY, PERIOD); // 0 milliseconds till start, 10 seconds delay between checks
+	}
+	
 	public static Properties getProperties() {
 		return properties;
 	}

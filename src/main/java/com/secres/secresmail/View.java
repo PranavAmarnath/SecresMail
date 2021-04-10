@@ -93,8 +93,7 @@ public class View {
 			private static final long serialVersionUID = -2357302025054207092L;
 
 			@Override
-			public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
-					boolean hasFocus, int row, int column) {
+			public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
 				super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 				setBorder(noFocusBorder);
 				return this;
@@ -144,12 +143,10 @@ public class View {
 					if(!Model.getFolder().isOpen()) {
 						Model.getFolder().open(Folder.READ_WRITE);
 					}
-					message = Model.getMessages()[(Model.getMessages().length - 1)
-							- mailTable.convertRowIndexToModel(mailTable.getSelectedRow())];
+					message = Model.getMessages()[(Model.getMessages().length - 1) - mailTable.convertRowIndexToModel(mailTable.getSelectedRow())];
 					content = message.getContent();
 					SwingUtilities.invokeLater(() -> {
-						mailTable.getModel().setValueAt(true,
-								mailTable.convertRowIndexToModel(mailTable.getSelectedRow()), 1);
+						mailTable.getModel().setValueAt(true, mailTable.convertRowIndexToModel(mailTable.getSelectedRow()), 1);
 						ListModel<Object> model = (ListModel<Object>) attachmentsList.getModel();
 						((DefaultListModel<Object>) model).removeAllElements();
 					});
@@ -232,8 +229,7 @@ public class View {
 
 		JPanel attachmentsPanel = new JPanel(new BorderLayout());
 		attachmentsPanel.add(listScrollPane);
-		attachmentsList.setBorder(new CompoundBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5), new CompoundBorder(
-				new ListCellTitledBorder(attachmentsList, "Attachments"), attachmentsList.getBorder())));
+		attachmentsList.setBorder(new CompoundBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5), new CompoundBorder(new ListCellTitledBorder(attachmentsList, "Attachments"), attachmentsList.getBorder())));
 
 		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, contentPanel, attachmentsPanel);
 

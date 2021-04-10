@@ -35,12 +35,10 @@ public class Main {
 					Desktop desktop = Desktop.getDesktop();
 
 					desktop.setAboutHandler(e -> {
-						JOptionPane.showMessageDialog(View.getFrame(), "About Dialog", "About SecresMail",
-								JOptionPane.PLAIN_MESSAGE);
+						JOptionPane.showMessageDialog(View.getFrame(), "About Dialog", "About SecresMail", JOptionPane.PLAIN_MESSAGE);
 					});
 					desktop.setPreferencesHandler(e -> {
-						JOptionPane.showMessageDialog(View.getFrame(), "Preferences", "Preferences",
-								JOptionPane.INFORMATION_MESSAGE);
+						JOptionPane.showMessageDialog(View.getFrame(), "Preferences", "Preferences", JOptionPane.INFORMATION_MESSAGE);
 					});
 					desktop.setQuitHandler((e, r) -> {
 						System.exit(0);

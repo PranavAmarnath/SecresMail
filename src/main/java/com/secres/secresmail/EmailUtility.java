@@ -17,14 +17,14 @@ import jakarta.mail.internet.MimeMultipart;
 
 /**
  * A utility class that sends an e-mail message with attachments.
+ * 
  * @author www.codejava.net
  * @author Pranav Amarnath
  *
  */
 public class EmailUtility {
 
-	public static void sendEmail(Properties smtpProperties, String toAddress, String subject, String message,
-			File[] attachFiles) throws AddressException, MessagingException, IOException {
+	public static void sendEmail(Properties smtpProperties, String toAddress, String subject, String message, File[] attachFiles) throws AddressException, MessagingException, IOException {
 
 		final String username = smtpProperties.getProperty("mail.user");
 		final String password = smtpProperties.getProperty("mail.password");

@@ -45,11 +45,9 @@ public class HTMLDocumentEditor extends JFrame implements ActionListener {
 	private Action italicAction = new StyledEditorKit.ItalicAction();
 
 	private Action insertBreakAction = new DefaultEditorKit.InsertBreakAction();
-	private HTMLEditorKit.InsertHTMLTextAction unorderedListAction = new HTMLEditorKit.InsertHTMLTextAction("Bullets",
-			"<ul><li> </li></ul>", HTML.Tag.P, HTML.Tag.UL);
-	private HTMLEditorKit.InsertHTMLTextAction bulletAction = new HTMLEditorKit.InsertHTMLTextAction("Bullets",
-			"<li> </li>", HTML.Tag.UL, HTML.Tag.LI);
-	
+	private HTMLEditorKit.InsertHTMLTextAction unorderedListAction = new HTMLEditorKit.InsertHTMLTextAction("Bullets", "<ul><li> </li></ul>", HTML.Tag.P, HTML.Tag.UL);
+	private HTMLEditorKit.InsertHTMLTextAction bulletAction = new HTMLEditorKit.InsertHTMLTextAction("Bullets", "<li> </li>", HTML.Tag.UL, HTML.Tag.LI);
+
 	private JDialog dialog;
 
 	public HTMLDocumentEditor() {
@@ -208,12 +206,9 @@ public class HTMLDocumentEditor extends JFrame implements ActionListener {
 		styleMenu.add(superscriptMenuItem);
 		styleMenu.add(strikeThroughMenuItem);
 
-		JMenuItem leftAlignMenuItem = new JMenuItem(
-				new StyledEditorKit.AlignmentAction("Left Align", StyleConstants.ALIGN_LEFT));
-		JMenuItem centerMenuItem = new JMenuItem(
-				new StyledEditorKit.AlignmentAction("Center", StyleConstants.ALIGN_CENTER));
-		JMenuItem rightAlignMenuItem = new JMenuItem(
-				new StyledEditorKit.AlignmentAction("Right Align", StyleConstants.ALIGN_RIGHT));
+		JMenuItem leftAlignMenuItem = new JMenuItem(new StyledEditorKit.AlignmentAction("Left Align", StyleConstants.ALIGN_LEFT));
+		JMenuItem centerMenuItem = new JMenuItem(new StyledEditorKit.AlignmentAction("Center", StyleConstants.ALIGN_CENTER));
+		JMenuItem rightAlignMenuItem = new JMenuItem(new StyledEditorKit.AlignmentAction("Right Align", StyleConstants.ALIGN_RIGHT));
 
 		leftAlignMenuItem.setText("Left Align");
 		centerMenuItem.setText("Center");
@@ -307,13 +302,10 @@ public class HTMLDocumentEditor extends JFrame implements ActionListener {
 		// JButton centerButton = new JButton(new CenterAction());
 		// JButton rightAlignButton = new JButton(new AlignRightAction());
 
-		JButton leftAlignButton = new JButton(
-				new StyledEditorKit.AlignmentAction("Left Align", StyleConstants.ALIGN_LEFT));
+		JButton leftAlignButton = new JButton(new StyledEditorKit.AlignmentAction("Left Align", StyleConstants.ALIGN_LEFT));
 		JButton centerButton = new JButton(new StyledEditorKit.AlignmentAction("Center", StyleConstants.ALIGN_CENTER));
-		JButton rightAlignButton = new JButton(
-				new StyledEditorKit.AlignmentAction("Right Align", StyleConstants.ALIGN_RIGHT));
-		JButton colorButton = new JButton(
-				new StyledEditorKit.AlignmentAction("Right Align", StyleConstants.ALIGN_RIGHT));
+		JButton rightAlignButton = new JButton(new StyledEditorKit.AlignmentAction("Right Align", StyleConstants.ALIGN_RIGHT));
+		JButton colorButton = new JButton(new StyledEditorKit.AlignmentAction("Right Align", StyleConstants.ALIGN_RIGHT));
 
 		leftAlignButton.setIcon(new ImageIcon("left.gif"));
 		centerButton.setIcon(new ImageIcon("center.gif"));
@@ -400,19 +392,19 @@ public class HTMLDocumentEditor extends JFrame implements ActionListener {
 
 			new Thread(() -> {
 				SwingUtilities.invokeLater(() -> {
-					dialog = new JDialog(View.getFrame(), "Sending...", true);
+					dialog = new JDialog(this, "Sending...", true);
 					JProgressBar pb = new JProgressBar();
 					pb.setIndeterminate(true);
 					dialog.add(pb);
 					dialog.pack();
+					dialog.setLocationRelativeTo(this);
 					dialog.setVisible(true);
 				});
 				Properties smtpProperties = Model.getProperties();
 				try {
 					EmailUtility.sendEmail(smtpProperties, toAddress, subject, message, attachFiles);
 				} catch (Exception ex) {
-					JOptionPane.showMessageDialog(this, "Error while sending the e-mail: " + ex.getMessage(), "Error",
-						JOptionPane.ERROR_MESSAGE);
+					JOptionPane.showMessageDialog(this, "Error while sending the e-mail: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
 					dialog.dispose();
 					return;
 				}
@@ -542,40 +534,16 @@ public class HTMLDocumentEditor extends JFrame implements ActionListener {
 	}
 
 	public void help() {
-		JOptionPane.showMessageDialog(this,
-				"DocumentEditor.java\n" + "Author: Charles Bell\n" + "Version: May 25, 2002\n"
-						+ "http://www.quantumhyperspace.com\n" + "QuantumHyperSpace Programming Services");
+		JOptionPane.showMessageDialog(this, "DocumentEditor.java\n" + "Author: Charles Bell\n" + "Version: May 25, 2002\n" + "http://www.quantumhyperspace.com\n" + "QuantumHyperSpace Programming Services");
 	}
 
 	public void showShortcuts() {
-		String shortcuts = "Navigate in    |  Tab\n" + "Navigate out   |  Ctrl+Tab\n"
-				+ "Navigate out backwards    |  Shift+Ctrl+Tab\n" + "Move up/down a line    |  Up/Down Arrown\n"
-				+ "Move left/right a component or char    |  Left/Right Arrow\n"
-				+ "Move up/down one vertical block    |  PgUp/PgDn\n" + "Move to start/end of line    |  Home/End\n"
-				+ "Move to previous/next word    |  Ctrl+Left/Right Arrow\n"
-				+ "Move to start/end of data    |  Ctrl+Home/End\n" + "Move left/right one block    |  Ctrl+PgUp/PgDn\n"
-				+ "Select All    |  Ctrl+A\n" + "Extend selection up one line    |  Shift+Up Arrow\n"
-				+ "Extend selection down one line    |  Shift+Down Arrow\n"
-				+ "Extend selection to beginning of line    |  Shift+Home\n"
-				+ "Extend selection to end of line    |  Shift+End\n"
-				+ "Extend selection to beginning of data    |  Ctrl+Shift+Home\n"
-				+ "Extend selection to end of data    |  Ctrl+Shift+End\n"
-				+ "Extend selection left    |  Shift+Right Arrow\n" + "Extend selection right    |  Shift+Right Arrow\n"
-				+ "Extend selection up one vertical block    |  Shift+PgUp\n"
-				+ "Extend selection down one vertical block    |  Shift+PgDn\n"
-				+ "Extend selection left one block    |  Ctrl+Shift+PgUp\n"
-				+ "Extend selection right one block    |  Ctrl+Shift+PgDn\n"
-				+ "Extend selection left one word    |  Ctrl+Shift+Left Arrow\n"
-				+ "Extend selection right one word    |  Ctrl+Shift+Right Arrow\n";
+		String shortcuts = "Navigate in    |  Tab\n" + "Navigate out   |  Ctrl+Tab\n" + "Navigate out backwards    |  Shift+Ctrl+Tab\n" + "Move up/down a line    |  Up/Down Arrown\n" + "Move left/right a component or char    |  Left/Right Arrow\n" + "Move up/down one vertical block    |  PgUp/PgDn\n" + "Move to start/end of line    |  Home/End\n" + "Move to previous/next word    |  Ctrl+Left/Right Arrow\n" + "Move to start/end of data    |  Ctrl+Home/End\n" + "Move left/right one block    |  Ctrl+PgUp/PgDn\n" + "Select All    |  Ctrl+A\n" + "Extend selection up one line    |  Shift+Up Arrow\n" + "Extend selection down one line    |  Shift+Down Arrow\n" + "Extend selection to beginning of line    |  Shift+Home\n" + "Extend selection to end of line    |  Shift+End\n" + "Extend selection to beginning of data    |  Ctrl+Shift+Home\n" + "Extend selection to end of data    |  Ctrl+Shift+End\n" + "Extend selection left    |  Shift+Right Arrow\n" + "Extend selection right    |  Shift+Right Arrow\n" + "Extend selection up one vertical block    |  Shift+PgUp\n" + "Extend selection down one vertical block    |  Shift+PgDn\n" + "Extend selection left one block    |  Ctrl+Shift+PgUp\n" + "Extend selection right one block    |  Ctrl+Shift+PgDn\n" + "Extend selection left one word    |  Ctrl+Shift+Left Arrow\n" + "Extend selection right one word    |  Ctrl+Shift+Right Arrow\n";
 		JOptionPane.showMessageDialog(this, shortcuts);
 	}
 
 	public void aboutQuantumHyperSpace() {
-		JOptionPane.showMessageDialog(this,
-				"QuantumHyperSpace Programming Services\n" + "http://www.quantumhyperspace.com\n"
-						+ "email: support@quantumhyperspace.com\n" + "                     or \n"
-						+ "email: charles@quantumhyperspace.com\n",
-				"QuantumHyperSpace", JOptionPane.INFORMATION_MESSAGE, new ImageIcon("quantumhyperspace.gif"));
+		JOptionPane.showMessageDialog(this, "QuantumHyperSpace Programming Services\n" + "http://www.quantumhyperspace.com\n" + "email: support@quantumhyperspace.com\n" + "                     or \n" + "email: charles@quantumhyperspace.com\n", "QuantumHyperSpace", JOptionPane.INFORMATION_MESSAGE, new ImageIcon("quantumhyperspace.gif"));
 	}
 
 	class FrameListener extends WindowAdapter {
