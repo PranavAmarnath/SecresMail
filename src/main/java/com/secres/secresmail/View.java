@@ -2,12 +2,16 @@ package com.secres.secresmail;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
+import java.awt.Image;
+import java.awt.Taskbar;
+import java.awt.Toolkit;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.HierarchyEvent;
 import java.awt.event.HierarchyListener;
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListModel;
@@ -251,6 +255,16 @@ public class View {
 		});
 		fileMenu.add(sendMenuItem);
 		menuBar.add(fileMenu);
+		
+		Toolkit defaultToolkit = Toolkit.getDefaultToolkit();
+        URL imageResource = getClass().getResource("/mail-logo.png"); // URL: https://cdn.pixabay.com/photo/2016/06/13/17/30/mail-1454731_1280.png
+        Image image = defaultToolkit.getImage(imageResource);
+        try {
+            Taskbar taskbar = Taskbar.getTaskbar();
+            taskbar.setIconImage(image);
+        } catch (UnsupportedOperationException e) {
+            frame.setIconImage(image);
+        }
 
 		frame.setJMenuBar(menuBar);
 		frame.add(mainPanel);

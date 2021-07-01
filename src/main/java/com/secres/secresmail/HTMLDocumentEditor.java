@@ -483,7 +483,7 @@ public class HTMLDocumentEditor extends JFrame implements ActionListener {
 		document = (HTMLDocument) editorKit.createDefaultDocument();
 		textPane.setDocument(document);
 		currentFile = null;
-		setTitle("HTMLDocumentEditor");
+		setTitle("Write Mail");
 		textPane.getDocument().addUndoableEditListener(undoHandler);
 		resetUndoManager();
 	}
